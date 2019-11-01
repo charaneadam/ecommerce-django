@@ -7,6 +7,7 @@ virtualenv
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
+*.pyc
 *$py.class
 
 # C extensions
@@ -93,3 +94,4 @@ tdd-django.code-workspace
 .gitignore
 .idea
 /static
+core/__pycache__/models.cpython-36.pyc
