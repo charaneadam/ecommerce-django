@@ -94,4 +94,3 @@ tdd-django.code-workspace
 .gitignore
 .idea
 /static
-core/__pycache__/models.cpython-36.pyc
