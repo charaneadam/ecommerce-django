@@ -6,6 +6,7 @@ from django.views.generic import DetailView, ListView, View
 from django.utils import timezone
 from django.contrib import messages
 from .models import Item, OrderItem, Order
+from .forms import CheckoutForm
 
 
 class HomeView(ListView):
@@ -27,8 +28,20 @@ class ItemDetailView(DetailView):
     model = Item
     template_name = 'product.html'
 
-def checkout(request):
-    return render(request, 'checkout-page.html')
+class CheckoutView(View):
+    def get(self, *args, **kwargs):
+        form = CheckoutForm()
+        context = {
+            'form': form,
+        }
+        return render(self.request, 'checkout-page.html', context)
+
+    def post(self, *args, **kwargs):
+        form = CheckoutForm(self.request.POST or None)
+        if form.is_valid():
+            return redirect('core:checkout')
+        messages.warning(self.request, 'Checkout failed')
+        return redirect('core:checkout')
 
 @login_required()
 def add_to_cart(request, slug):

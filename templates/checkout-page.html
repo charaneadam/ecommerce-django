@@ -1,4 +1,7 @@
-{% extends 'base.html' %} {% block content %}
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block content %}
 
     <!--Main layout-->
     <main class="">
@@ -13,26 +16,17 @@
                     <!--Card-->
                     <div class="card">
                         <!--Card content-->
-                        <form class="card-body">
+                        <form method="post" class="card-body">
+                        {% csrf_token %}
                             <!--address-->
                             <div class="md-form mb-5">
-                                <input
-                                        type="text"
-                                        id="address"
-                                        class="form-control"
-                                        placeholder="1234 Main St"
-                                />
+                                {{ form.street_address }}
                                 <label for="address" class="">Address</label>
                             </div>
 
                             <!--address-2-->
                             <div class="md-form mb-5">
-                                <input
-                                        type="text"
-                                        id="address-2"
-                                        class="form-control"
-                                        placeholder="Apartment or suite"
-                                />
+                                {{ form.apartment_address }}
                                 <label for="address-2" class="">Address 2 (optional)</label>
                             </div>
 
@@ -41,14 +35,7 @@
                                 <!--Grid column-->
                                 <div class="col-lg-4 col-md-12 mb-4">
                                     <label for="country">Country</label>
-                                    <select
-                                            class="custom-select d-block w-100"
-                                            id="country"
-                                            required
-                                    >
-                                        <option value="">Choose...</option>
-                                        <option>United States</option>
-                                    </select>
+                                    {{ form.country }}
                                     <div class="invalid-feedback">
                                         Please select a valid country.
                                     </div>
@@ -57,27 +44,8 @@
 
                                 <!--Grid column-->
                                 <div class="col-lg-4 col-md-6 mb-4">
-                                    <label for="state">State</label>
-                                    <select class="custom-select d-block w-100" id="state" required>
-                                        <option value="">Choose...</option>
-                                        <option>California</option>
-                                    </select>
-                                    <div class="invalid-feedback">
-                                        Please provide a valid state.
-                                    </div>
-                                </div>
-                                <!--Grid column-->
-
-                                <!--Grid column-->
-                                <div class="col-lg-4 col-md-6 mb-4">
                                     <label for="zip">Zip</label>
-                                    <input
-                                            type="text"
-                                            class="form-control"
-                                            id="zip"
-                                            placeholder=""
-                                            required
-                                    />
+                                    {{ form.zip }}
                                     <div class="invalid-feedback">
                                         Zip code required.
                                     </div>
@@ -90,9 +58,11 @@
 
                             <div class="custom-control custom-checkbox">
                                 <input
+                                        {% if form.same_billing_address.value %} checked {% endif %}
                                         type="checkbox"
                                         class="custom-control-input"
                                         id="same-address"
+                                        name="same_billing_address"
                                 />
                                 <label class="custom-control-label" for="same-address"
                                 >Shipping address is the same as my billing address</label
@@ -100,9 +70,11 @@
                             </div>
                             <div class="custom-control custom-checkbox">
                                 <input
+                                        {% if form.save_info.value %} checked {% endif %}
                                         type="checkbox"
                                         class="custom-control-input"
                                         id="save-info"
+                                        name="save_info"
                                 />
                                 <label class="custom-control-label" for="save-info"
                                 >Save this information for next time</label
@@ -112,28 +84,13 @@
                             <hr/>
 
                             <div class="d-block my-3">
-                                <div class="custom-control custom-radio">
-                                    <input
-                                            id="debit"
-                                            name="paymentMethod"
-                                            type="radio"
-                                            class="custom-control-input"
-                                            required
-                                    />
-                                    <label class="custom-control-label" for="debit"
-                                    >Stripe</label
-                                    >
-                                </div>
-                                <div class="custom-control custom-radio">
-                                    <input
-                                            id="paypal"
-                                            name="paymentMethod"
-                                            type="radio"
-                                            class="custom-control-input"
-                                            required
-                                    />
-                                    <label class="custom-control-label" for="paypal">Paypal</label>
-                                </div>
+                                {% for value, name in form.fields.payment_option.choices %}
+                                    <div class="custom-control custom-radio">
+                                        <input id="{{ name }}" name="payment_option" type="radio"
+                                               value="{{ value }}" class="custom-control-input" required/>
+                                        <label class="custom-control-label" for="{{ name }}">{{ name }}</label>
+                                    </div>
+                                {% endfor %}
                             </div>
                             <hr class="mb-4"/>
                             <button class="btn btn-primary btn-lg btn-block" type="submit">
