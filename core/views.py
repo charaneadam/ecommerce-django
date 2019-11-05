@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.shortcuts import render, get_object_or_404, redirect
 from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.auth.decorators import login_required
@@ -5,8 +6,13 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import DetailView, ListView, View
 from django.utils import timezone
 from django.contrib import messages
-from .models import Item, OrderItem, Order, BillingAddress
+from .models import Item, OrderItem, Order, BillingAddress, Payment
 from .forms import CheckoutForm
+
+
+import stripe
+stripe.api_key = settings.STRIPE_SECRET_KEY
+
 
 
 class HomeView(ListView):
@@ -92,6 +98,70 @@ def add_to_cart(request, slug):
         messages.info(request, "This item was added to your cart.")
     return redirect("core:order-summary")
 
+class PaymentView(View):
+    def get(self, *args, **kwargs):
+        # order
+        return render(self.request, 'payment.html')
+
+    def post(self, *args, **kwargs):
+        order = Order.objects.get(user=self.request.user, ordered=False)
+        amount = int(order.get_total_price() * 100) # x100 since it's in cents
+        token = self.request.POST.get('stripeToken')
+
+        try:
+            charge = stripe.Charge.create(
+                amount=amount,
+                currency="usd",
+                source=token,
+            )
+
+            # Create the payment
+            payment = Payment()
+            payment.stripe_charge_id = charge.id
+            payment.user = self.request.user
+            payment.amount = amount
+            payment.save()
+
+            # Assign the payment to the order
+            order.ordered = True
+            order.payment = payment
+            order.save()
+
+            messages.success(self.request, "Your order was successful.")
+        except stripe.error.CardError as e:
+            # Since it's a decline, stripe.error.CardError will be caught
+
+            messages.error(self.request, f'{e.error.message}')
+
+            print('Status is: %s' % e.http_status)
+            print('Type is: %s' % e.error.type)
+            print('Code is: %s' % e.error.code)
+            # param is '' in this case
+            print('Param is: %s' % e.error.param)
+            print('Message is: %s' % e.error.message)
+        except stripe.error.RateLimitError as e:
+            messages.error(self.request, "Rate limit error.")
+        except stripe.error.InvalidRequestError as e:
+            messages.error(self.request, "Invalid parameters.")
+        except stripe.error.AuthenticationError as e:
+            # Authentication with Stripe's API failed
+            # (maybe you changed API keys recently)
+            messages.error(self.request, "Authentication error.")
+        except stripe.error.APIConnectionError as e:
+            # Network communication with Stripe failed
+            messages.error(self.request, "Network error.")
+        except stripe.error.StripeError as e:
+            # Display a very generic error to the user, and maybe send
+            # yourself an email
+            messages.error(self.request, "Something went wrong. You were not charged. Please try again.")
+        except Exception as e:
+            # Something else happened, completely unrelated to Stripe
+            # Send email to admin
+            messages.error(self.request, "A system error occured. We have been notified.")
+        finally:
+            return redirect('core:home')
+
+@login_required()
 def remove_from_cart(request, slug):
     item = get_object_or_404(Item, slug=slug)
     order_qs = Order.objects.filter(user=request.user, ordered=False)
