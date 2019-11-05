@@ -34,7 +34,7 @@
                                     ${{ order_item.get_total_item_price }}
                                 {% endif %}
                                 <a class="float-right" href="{% url 'core:remove-from-cart' order_item.item.slug %}">
-                                    <i class="fas fa-trash"></i>
+                                    <i class="fas fa-trash text-danger"></i>
                                 </a>
                             </td>
                         </tr>
