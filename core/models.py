@@ -80,7 +80,8 @@ class Order(models.Model):
         total = 0.0
         for order_item in self.items.all():
             total += order_item.get_final_price()
-        total = max(0, total - self.coupon.amount)
+        if self.coupon:
+            total = max(0, total - self.coupon.amount)
         return total
 
     def __str__(self):
